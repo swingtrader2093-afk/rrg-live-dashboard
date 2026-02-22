@@ -186,11 +186,12 @@ for name, symbol in sectors.items():
 
         hist = df.dropna()
 
-        if len(hist) <= time_index:
-            continue
+        # --- align time safely ---
+        safe_index = min(time_index, len(hist) - 1)
         
-        start_idx = max(0, time_index - playback)
-        tail = hist.iloc[start_idx:time_index + 1]
+        start_idx = max(0, safe_index - playback)
+        tail = hist.iloc[start_idx:safe_index + 1]
+
 
 
         if len(tail) == 0:
