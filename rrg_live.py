@@ -87,17 +87,20 @@ if bench is None:
     st.stop()
     
 # =============================
-# TIME INDEX CONTROL
+# TIME CONTROL (DATE-BASED — PRO)
 # =============================
 bench_clean = bench.dropna()
-max_idx = len(bench_clean) - 1
 
-time_index = st.slider(
+available_dates = bench_clean.index
+
+selected_date = st.select_slider(
     "⏳ RRG Time Position",
-    min_value=20,
-    max_value=max_idx,
-    value=max_idx,
+    options=available_dates,
+    value=available_dates[-1],
 )
+
+# convert back to positional index for existing logic
+time_index = bench_clean.index.get_loc(selected_date)
 
 # =============================
 # SHOW SELECTED DATE
