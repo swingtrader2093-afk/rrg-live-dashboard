@@ -105,7 +105,6 @@ time_index = bench_clean.index.get_loc(selected_date)
 # =============================
 # SHOW SELECTED DATE
 # =============================
-selected_date = bench_clean.index[time_index]
 st.caption(f"📅 Selected Date: {selected_date.date()}")
 
 # =============================
