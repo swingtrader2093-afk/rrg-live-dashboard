@@ -201,8 +201,21 @@ for name, symbol in sectors.items():
         df = df.dropna()
 
 
-        if len(df) < 15:
+        # =============================
+        # MIN HISTORY REQUIREMENT (adaptive)
+        # =============================
+        min_required = 15
+        
+        if timeframe == "Monthly":
+            min_required = 8
+        elif timeframe == "Weekly":
+            min_required = 12
+        else:  # Daily
+            min_required = 30
+        
+        if len(df) < min_required:
             continue
+
 
         # Relative strength
         df["RS"] = df["sec"] / df["bench"]
