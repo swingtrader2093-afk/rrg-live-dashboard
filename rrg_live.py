@@ -122,11 +122,14 @@ if not nifty_df.empty:
 
     nifty_clean = nifty_df["Close"].squeeze().dropna()
 
-    # --- safe selected timestamp ---
-    if time_index < len(nifty_clean):
-        selected_ts = nifty_clean.index[time_index]
-    else:
-        selected_ts = nifty_clean.index[-1]
+    # --- use globally selected date for perfect sync ---
+    selected_ts = selected_date
+    
+    # if date not present in nifty (daily gaps), snap to nearest
+    if selected_ts not in nifty_clean.index:
+        nearest_loc = nifty_clean.index.get_indexer([selected_ts], method="nearest")[0]
+        selected_ts = nifty_clean.index[nearest_loc]
+
 
     nifty_fig = go.Figure()
 
