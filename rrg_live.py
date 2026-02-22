@@ -31,10 +31,22 @@ interval = "1wk"
 # =============================
 @st.cache_data(ttl=3600)
 def fetch(symbol):
-    df = yf.download(symbol, period=period, interval=interval, auto_adjust=True, progress=False)
+    df = yf.download(
+        symbol,
+        period=period,
+        interval=interval,
+        auto_adjust=True,
+        progress=False,
+        threads=False,
+    )
+    if df.empty:
+        return None
     return df["Close"]
 
 bench = fetch(benchmark)
+if bench is None:
+    st.error("Benchmark data not available")
+    st.stop()
 
 fig = go.Figure()
 
@@ -44,10 +56,13 @@ for name, symbol in sectors.items():
     try:
         sec = fetch(symbol)
 
-        df = pd.DataFrame({
-            "sec": sec,
-            "bench": bench
-        }).dropna()
+        if sec is None:
+            continue
+
+        df = pd.concat([sec, bench], axis=1)
+        df.columns = ["sec", "bench"]
+        df = df.dropna()
+
 
         if len(df) < 30:
             continue
@@ -87,8 +102,8 @@ fig.add_hline(y=100, line_dash="dash")
 
 fig.update_layout(
     height=760,
-    xaxis=dict(range=[90,110], title="RS Ratio"),
-    yaxis=dict(range=[90,110], title="RS Momentum"),
+    xaxis=dict(range=[85,115], title="RS Ratio"),
+    yaxis=dict(range=[85,115], title="RS Momentum"),
     legend=dict(orientation="h"),
 )
 
