@@ -33,8 +33,36 @@ quad_colors = {
     "Improving": "#2979FF",   # blue
 }
 
+# =============================
+# SECTOR COLOR PALETTE
+# =============================
+import plotly.express as px
+sector_palette = px.colors.qualitative.Set2
+
+
 period = st.sidebar.selectbox("Period", ["6mo", "1y", "2y"], index=1)
-interval = "1wk"
+
+playback = st.sidebar.slider(
+    "RRG History (bars)",
+    min_value=5,
+    max_value=30,
+    value=10
+)
+
+timeframe = st.sidebar.selectbox(
+    "Timeframe",
+    ["Daily", "Weekly", "Monthly"],
+    index=1
+)
+
+interval_map = {
+    "Daily": "1d",
+    "Weekly": "1wk",
+    "Monthly": "1mo"
+}
+
+interval = interval_map[timeframe]
+
 
 # =============================
 # DATA FETCH
@@ -101,7 +129,7 @@ for name, symbol in sectors.items():
         df["RS_ratio"] = (df["RS"] / df["RS"].rolling(6).mean()) * 100
         df["RS_mom"] = (df["RS_ratio"] / df["RS_ratio"].rolling(6).mean()) * 100
 
-        tail = df.dropna().tail(10)
+        tail = df.dropna().tail(playback)
 
         if len(tail) == 0:
             continue
@@ -129,13 +157,20 @@ for name, symbol in sectors.items():
         
         valid_count += 1
 
-        color = quad_colors.get(quad, "#999999")
+        base_color = sector_palette[list(sectors.keys()).index(name) % len(sector_palette)]
+        color = base_color
 
         # tail line (soft glow)
         fig.add_trace(go.Scatter(
             x=tail["RS_ratio"],
             y=tail["RS_mom"],
             mode="lines",
+            hovertemplate=(
+                "<b>%{text}</b><br>"
+                "RS Ratio: %{x:.2f}<br>"
+                "RS Momentum: %{y:.2f}<extra></extra>"
+            ),
+            legendgroup=name,
             line=dict(width=3, color=color),
             opacity=0.35,
             showlegend=False,
@@ -146,6 +181,12 @@ for name, symbol in sectors.items():
             x=tail["RS_ratio"],
             y=tail["RS_mom"],
             mode="markers+text",
+            hovertemplate=(
+                "<b>%{text}</b><br>"
+                "RS Ratio: %{x:.2f}<br>"
+                "RS Momentum: %{y:.2f}<extra></extra>"
+            ),
+            legendgroup=name,
             text=[f"{name}"] + [""]*(len(tail)-1),
             textposition="top center",
             marker=dict(
@@ -181,7 +222,14 @@ fig.update_layout(
     legend=dict(orientation="h"),
 )
 
-st.plotly_chart(fig, width="stretch")
+st.plotly_chart(
+    fig,
+    width="stretch",
+    config={
+        "displaylogo": False,
+        "doubleClick": "reset",
+    },
+)
 
 st.caption(f"✅ Active sectors plotted: {valid_count}")
 
