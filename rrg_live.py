@@ -14,7 +14,6 @@ benchmark = "^NSEI"
 sectors = {
     "Auto": "^CNXAUTO",
     "Bank": "^NSEBANK",
-    "Financial Services": "^CNXFINANCE",
     "FMCG": "^CNXFMCG",
     "IT": "^CNXIT",
     "Media": "^CNXMEDIA",
@@ -22,9 +21,6 @@ sectors = {
     "Pharma": "^CNXPHARMA",
     "PSU Bank": "^CNXPSUBANK",
     "Realty": "^CNXREALTY",
-    "Consumer Durables": "^CNXCONSUMER",
-    "Oil & Gas": "^CNXOILGAS",
-    "Healthcare": "^CNXHEALTHCARE",
 }
 
 period = st.sidebar.selectbox("Period", ["6mo", "1y", "2y"], index=1)
