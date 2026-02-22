@@ -250,8 +250,16 @@ for name, symbol in sectors.items():
         start_idx = max(0, safe_loc - playback)
         tail = hist.iloc[start_idx:safe_loc + 1]
 
-
-
+        # =============================
+        # TAIL DOWNSAMPLING (PRO EVEN SPACING)
+        # =============================
+        max_tail_points = 4
+        
+        if len(tail) > max_tail_points:
+            import numpy as np
+        
+            idx = np.linspace(0, len(tail) - 1, max_tail_points, dtype=int)
+            tail = tail.iloc[idx]
 
         if len(tail) == 0:
             continue
@@ -316,7 +324,7 @@ for name, symbol in sectors.items():
         ))
         
         # current point index
-        sizes = [6] * len(tail)
+        sizes = [5] * len(tail)
         sizes[-1] = 20  # 🔥 bigger current point
         
         fig.add_trace(go.Scatter(
