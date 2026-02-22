@@ -220,9 +220,22 @@ for name, symbol in sectors.items():
         # Relative strength
         df["RS"] = df["sec"] / df["bench"]
 
-        # JdK approximations
-        df["RS_ratio"] = (df["RS"] / df["RS"].rolling(6).mean()) * 100
-        df["RS_mom"] = (df["RS_ratio"] / df["RS_ratio"].rolling(6).mean()) * 100
+        # =============================
+        # ADAPTIVE JdK SMOOTHING
+        # =============================
+        if timeframe == "Monthly":
+            rs_window = 3
+            mom_window = 3
+        elif timeframe == "Weekly":
+            rs_window = 6
+            mom_window = 6
+        else:  # Daily
+            rs_window = 10
+            mom_window = 10
+        
+        df["RS_ratio"] = (df["RS"] / df["RS"].rolling(rs_window).mean()) * 100
+        df["RS_mom"] = (df["RS_ratio"] / df["RS_ratio"].rolling(mom_window).mean()) * 100
+
 
         hist = df.dropna()
 
