@@ -50,6 +50,22 @@ if bench is None:
 
 fig = go.Figure()
 
+# =============================
+# QUADRANT BACKGROUND
+# =============================
+fig.add_shape(type="rect", x0=100, y0=100, x1=115, y1=115,
+              fillcolor="rgba(0,200,0,0.08)", line_width=0)  # Leading
+
+fig.add_shape(type="rect", x0=85, y0=100, x1=100, y1=115,
+              fillcolor="rgba(0,0,255,0.08)", line_width=0)  # Improving
+
+fig.add_shape(type="rect", x0=85, y0=85, x1=100, y1=100,
+              fillcolor="rgba(255,0,0,0.08)", line_width=0)  # Lagging
+
+fig.add_shape(type="rect", x0=100, y0=85, x1=115, y1=100,
+              fillcolor="rgba(255,165,0,0.08)", line_width=0)  # Weakening
+
+
 valid_count = 0
 
 for name, symbol in sectors.items():
@@ -64,20 +80,34 @@ for name, symbol in sectors.items():
         df = df.dropna()
 
 
-        if len(df) < 30:
+        if len(df) < 15:
             continue
 
         # Relative strength
         df["RS"] = df["sec"] / df["bench"]
 
         # JdK approximations
-        df["RS_ratio"] = (df["RS"] / df["RS"].rolling(10).mean()) * 100
-        df["RS_mom"] = (df["RS_ratio"] / df["RS_ratio"].rolling(10).mean()) * 100
+        df["RS_ratio"] = (df["RS"] / df["RS"].rolling(6).mean()) * 100
+        df["RS_mom"] = (df["RS_ratio"] / df["RS_ratio"].rolling(6).mean()) * 100
 
         tail = df.dropna().tail(10)
 
         if len(tail) == 0:
             continue
+
+        # ===== ADD THIS BLOCK HERE =====
+        last_rs = tail["RS_ratio"].iloc[-1]
+        last_mom = tail["RS_mom"].iloc[-1]
+        
+        if last_rs > 100 and last_mom > 100:
+            quad = "Leading"
+        elif last_rs > 100 and last_mom < 100:
+            quad = "Weakening"
+        elif last_rs < 100 and last_mom < 100:
+            quad = "Lagging"
+        else:
+            quad = "Improving"
+        # ===== END BLOCK =====
 
         valid_count += 1
 
@@ -85,7 +115,7 @@ for name, symbol in sectors.items():
             x=tail["RS_ratio"],
             y=tail["RS_mom"],
             mode="lines+markers+text",
-            text=[name] + [""]*(len(tail)-1),
+            text=[f"{name} ({quad})"] + [""]*(len(tail)-1),
             textposition="top center",
             marker=dict(size=7),
             name=name
@@ -99,6 +129,14 @@ for name, symbol in sectors.items():
 # =============================
 fig.add_vline(x=100, line_dash="dash")
 fig.add_hline(y=100, line_dash="dash")
+
+# =============================
+# QUADRANT TEXT LABELS
+# =============================
+fig.add_annotation(x=112, y=112, text="Leading", showarrow=False)
+fig.add_annotation(x=88, y=112, text="Improving", showarrow=False)
+fig.add_annotation(x=88, y=88, text="Lagging", showarrow=False)
+fig.add_annotation(x=112, y=88, text="Weakening", showarrow=False)
 
 fig.update_layout(
     height=760,
