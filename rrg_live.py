@@ -106,7 +106,7 @@ selected_date = bench_clean.index[time_index]
 st.caption(f"📅 Selected Date: {selected_date.date()}")
 
 # =============================
-# NIFTY PRICE CHART (TOP)
+# NIFTY PRICE CHART (TOP) — WITH VERTICAL CROSSHAIR
 # =============================
 nifty_df = yf.download(
     benchmark,
@@ -120,26 +120,48 @@ nifty_df = yf.download(
 if not nifty_df.empty:
     st.subheader("📈 Nifty 50")
 
-    # --- force clean 1D series ---
     nifty_clean = nifty_df["Close"].squeeze().dropna()
 
-    # ensure pandas Series
-    nifty_clean = pd.Series(nifty_clean.values, index=nifty_clean.index)
-
-    # build moving marker
-    marker_series = pd.Series(index=nifty_clean.index, dtype=float)
-
+    # --- safe selected timestamp ---
     if time_index < len(nifty_clean):
-        marker_series.iloc[time_index] = nifty_clean.iloc[time_index]
+        selected_ts = nifty_clean.index[time_index]
+    else:
+        selected_ts = nifty_clean.index[-1]
 
-    chart_df = pd.concat(
-        [nifty_clean.rename("Nifty"),
-         marker_series.rename("Selected")],
-        axis=1
+    nifty_fig = go.Figure()
+
+    # price line
+    nifty_fig.add_trace(
+        go.Scatter(
+            x=nifty_clean.index,
+            y=nifty_clean.values,
+            mode="lines",
+            name="Nifty 50",
+            line=dict(width=2),
+        )
     )
 
-    nifty_plot = chart_df.copy()
-    st.line_chart(nifty_plot, use_container_width=True)
+    # 🔥 vertical crosshair synced to slider
+    nifty_fig.add_vline(
+        x=selected_ts,
+        line_width=2,
+        line_dash="dash",
+        line_color="red",
+        opacity=0.7,
+    )
+
+    nifty_fig.update_layout(
+        height=300,
+        margin=dict(l=10, r=10, t=30, b=10),
+        showlegend=False,
+        hovermode="x unified",
+    )
+
+    st.plotly_chart(
+        nifty_fig,
+        width="stretch",
+        config={"displaylogo": False},
+    )
 
 fig = go.Figure()
 
