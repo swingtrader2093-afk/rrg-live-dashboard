@@ -174,20 +174,20 @@ fig = go.Figure()
 # QUADRANT BACKGROUND
 # =============================
 fig.add_shape(type="rect", x0=100, y0=100, x1=115, y1=115,
-              fillcolor="rgba(0,200,0,0.08)", line_width=0)  # Leading
+              fillcolor="rgba(0,200,0,0.05)", line_width=0)  # Leading
 
 fig.add_shape(type="rect", x0=85, y0=100, x1=100, y1=115,
-              fillcolor="rgba(0,0,255,0.08)", line_width=0)  # Improving
+              fillcolor="rgba(0,0,255,0.05)", line_width=0)  # Improving
 
 fig.add_shape(type="rect", x0=85, y0=85, x1=100, y1=100,
-              fillcolor="rgba(255,0,0,0.08)", line_width=0)  # Lagging
+              fillcolor="rgba(255,0,0,0.05)", line_width=0)  # Lagging
 
 fig.add_shape(type="rect", x0=100, y0=85, x1=115, y1=100,
-              fillcolor="rgba(255,165,0,0.08)", line_width=0)  # Weakening
+              fillcolor="rgba(255,165,0,0.05)", line_width=0)  # Weakening
 
 ranking_rows = []
-
 valid_count = 0
+emerging_leaders = []
 
 for name, symbol in sectors.items():
     try:
@@ -270,6 +270,22 @@ for name, symbol in sectors.items():
             quad = "Improving"
         # ===== END BLOCK =====
 
+        # =============================
+        # EMERGING LEADER DETECTION
+        # =============================
+        prev_rs = tail["RS_ratio"].iloc[-2] if len(tail) >= 2 else last_rs
+        prev_mom = tail["RS_mom"].iloc[-2] if len(tail) >= 2 else last_mom
+        
+        is_emerging = (
+            last_rs > 100 and
+            last_mom > 100 and
+            not (prev_rs > 100 and prev_mom > 100)
+        )
+        
+        if is_emerging:
+            emerging_leaders.append(name)
+
+
         ranking_rows.append({
             "Sector": name,
             "RS_Ratio": round(last_rs, 2),
@@ -295,13 +311,13 @@ for name, symbol in sectors.items():
             ),
             legendgroup=name,
             line=dict(width=3, color=color),
-            opacity=0.35,
+            opacity=0.20,
             showlegend=False,
         ))
         
         # current point index
         sizes = [6] * len(tail)
-        sizes[-1] = 16  # 🔥 bigger current point
+        sizes[-1] = 20  # 🔥 bigger current point
         
         fig.add_trace(go.Scatter(
             x=tail["RS_ratio"],
@@ -318,7 +334,10 @@ for name, symbol in sectors.items():
             marker=dict(
                 size=sizes,
                 color=color,
-                line=dict(width=1, color="white")
+                line=dict(
+                    width=3 if name in emerging_leaders else 2,
+                    color="gold" if name in emerging_leaders else "white"
+                ),
             ),
             name=name,
             legendgrouptitle_text=name,
@@ -377,3 +396,9 @@ if ranking_rows:
     st.subheader("📊 Sector Strength Ranking")
     st.dataframe(rank_df, use_container_width=True)
 
+# =============================
+# EMERGING LEADERS PANEL
+# =============================
+if emerging_leaders:
+    st.subheader("🚀 Emerging Leaders")
+    st.success(", ".join(emerging_leaders))
