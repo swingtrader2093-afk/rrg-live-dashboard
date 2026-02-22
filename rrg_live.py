@@ -114,20 +114,23 @@ nifty_df = yf.download(
 if not nifty_df.empty:
     st.subheader("📈 Nifty 50")
 
-    nifty_clean = nifty_df["Close"].dropna()
+    # --- force clean 1D series ---
+    nifty_clean = nifty_df["Close"].squeeze().dropna()
 
-    marker_series = pd.Series(
-        [None] * len(nifty_clean),
-        index=nifty_clean.index
-    )
+    # ensure pandas Series
+    nifty_clean = pd.Series(nifty_clean.values, index=nifty_clean.index)
 
-    if time_index < len(marker_series):
+    # build moving marker
+    marker_series = pd.Series(index=nifty_clean.index, dtype=float)
+
+    if time_index < len(nifty_clean):
         marker_series.iloc[time_index] = nifty_clean.iloc[time_index]
 
-    chart_df = pd.DataFrame({
-        "Nifty": nifty_clean,
-        "Selected": marker_series
-    })
+    chart_df = pd.concat(
+        [nifty_clean.rename("Nifty"),
+         marker_series.rename("Selected")],
+        axis=1
+    )
 
     st.line_chart(chart_df)
 
