@@ -213,11 +213,17 @@ for name, symbol in sectors.items():
 
         hist = df.dropna()
 
-        # --- align time safely ---
-        safe_index = min(time_index, len(hist) - 1)
+        # =============================
+        # DATE-ALIGNED SAFE POSITION
+        # =============================
+        if selected_date in hist.index:
+            safe_loc = hist.index.get_loc(selected_date)
+        else:
+            safe_loc = hist.index.get_indexer([selected_date], method="nearest")[0]
         
-        start_idx = max(0, safe_index - playback)
-        tail = hist.iloc[start_idx:safe_index + 1]
+        start_idx = max(0, safe_loc - playback)
+        tail = hist.iloc[start_idx:safe_loc + 1]
+
 
 
 
