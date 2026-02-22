@@ -23,6 +23,16 @@ sectors = {
     "Realty": "^CNXREALTY",
 }
 
+# =============================
+# QUADRANT COLOR MAP
+# =============================
+quad_colors = {
+    "Leading": "#00C853",     # green
+    "Weakening": "#FF9800",   # orange
+    "Lagging": "#FF5252",     # red
+    "Improving": "#2979FF",   # blue
+}
+
 period = st.sidebar.selectbox("Period", ["6mo", "1y", "2y"], index=1)
 interval = "1wk"
 
@@ -65,6 +75,7 @@ fig.add_shape(type="rect", x0=85, y0=85, x1=100, y1=100,
 fig.add_shape(type="rect", x0=100, y0=85, x1=115, y1=100,
               fillcolor="rgba(255,165,0,0.08)", line_width=0)  # Weakening
 
+ranking_rows = []
 
 valid_count = 0
 
@@ -109,17 +120,42 @@ for name, symbol in sectors.items():
             quad = "Improving"
         # ===== END BLOCK =====
 
+        ranking_rows.append({
+            "Sector": name,
+            "RS_Ratio": round(last_rs, 2),
+            "RS_Momentum": round(last_mom, 2),
+            "Quadrant": quad,
+        })
+        
         valid_count += 1
 
+        color = quad_colors.get(quad, "#999999")
+
+        # tail line (soft glow)
         fig.add_trace(go.Scatter(
             x=tail["RS_ratio"],
             y=tail["RS_mom"],
-            mode="lines+markers+text",
-            text=[f"{name} ({quad})"] + [""]*(len(tail)-1),
+            mode="lines",
+            line=dict(width=3, color=color),
+            opacity=0.35,
+            showlegend=False,
+        ))
+        
+        # main markers + label
+        fig.add_trace(go.Scatter(
+            x=tail["RS_ratio"],
+            y=tail["RS_mom"],
+            mode="markers+text",
+            text=[f"{name}"] + [""]*(len(tail)-1),
             textposition="top center",
-            marker=dict(size=7),
+            marker=dict(
+                size=10,
+                color=color,
+                line=dict(width=1, color="white")
+            ),
             name=name
         ))
+
 
     except Exception:
         continue
@@ -127,8 +163,8 @@ for name, symbol in sectors.items():
 # =============================
 # QUADRANT LINES
 # =============================
-fig.add_vline(x=100, line_dash="dash")
-fig.add_hline(y=100, line_dash="dash")
+fig.add_vline(x=100, line_dash="dash", line_color="#888")
+fig.add_hline(y=100, line_dash="dash", line_color="#888")
 
 # =============================
 # QUADRANT TEXT LABELS
@@ -148,3 +184,14 @@ fig.update_layout(
 st.plotly_chart(fig, width="stretch")
 
 st.caption(f"✅ Active sectors plotted: {valid_count}")
+
+# =============================
+# SECTOR RANKING TABLE
+# =============================
+if ranking_rows:
+    rank_df = pd.DataFrame(ranking_rows)
+    rank_df = rank_df.sort_values("RS_Ratio", ascending=False)
+    
+    st.subheader("📊 Sector Strength Ranking")
+    st.dataframe(rank_df, use_container_width=True)
+
