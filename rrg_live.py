@@ -85,6 +85,51 @@ bench = fetch(benchmark)
 if bench is None:
     st.error("Benchmark data not available")
     st.stop()
+    
+# =============================
+# TIME INDEX CONTROL
+# =============================
+bench_clean = bench.dropna()
+max_idx = len(bench_clean) - 1
+
+time_index = st.slider(
+    "⏳ RRG Time Position",
+    min_value=20,
+    max_value=max_idx,
+    value=max_idx,
+)
+
+# =============================
+# NIFTY PRICE CHART (TOP)
+# =============================
+nifty_df = yf.download(
+    benchmark,
+    period=period,
+    interval=interval,
+    auto_adjust=True,
+    progress=False,
+    threads=False,
+)
+
+if not nifty_df.empty:
+    st.subheader("📈 Nifty 50")
+
+    nifty_clean = nifty_df["Close"].dropna()
+
+    marker_series = pd.Series(
+        [None] * len(nifty_clean),
+        index=nifty_clean.index
+    )
+
+    if time_index < len(marker_series):
+        marker_series.iloc[time_index] = nifty_clean.iloc[time_index]
+
+    chart_df = pd.DataFrame({
+        "Nifty": nifty_clean,
+        "Selected": marker_series
+    })
+
+    st.line_chart(chart_df)
 
 fig = go.Figure()
 
@@ -129,7 +174,14 @@ for name, symbol in sectors.items():
         df["RS_ratio"] = (df["RS"] / df["RS"].rolling(6).mean()) * 100
         df["RS_mom"] = (df["RS_ratio"] / df["RS_ratio"].rolling(6).mean()) * 100
 
-        tail = df.dropna().tail(playback)
+        hist = df.dropna()
+
+        if len(hist) <= time_index:
+            continue
+        
+        start_idx = max(0, time_index - playback)
+        tail = hist.iloc[start_idx:time_index + 1]
+
 
         if len(tail) == 0:
             continue
@@ -165,6 +217,7 @@ for name, symbol in sectors.items():
             x=tail["RS_ratio"],
             y=tail["RS_mom"],
             mode="lines",
+            text=[name] * len(tail),
             hovertemplate=(
                 "<b>%{text}</b><br>"
                 "RS Ratio: %{x:.2f}<br>"
@@ -176,7 +229,10 @@ for name, symbol in sectors.items():
             showlegend=False,
         ))
         
-        # main markers + label
+        # current point index
+        sizes = [6] * len(tail)
+        sizes[-1] = 16  # 🔥 bigger current point
+        
         fig.add_trace(go.Scatter(
             x=tail["RS_ratio"],
             y=tail["RS_mom"],
@@ -190,12 +246,14 @@ for name, symbol in sectors.items():
             text=[f"{name}"] + [""]*(len(tail)-1),
             textposition="top center",
             marker=dict(
-                size=10,
+                size=sizes,
                 color=color,
                 line=dict(width=1, color="white")
             ),
-            name=name
+            name=name,
+            legendgrouptitle_text=name,
         ))
+
 
 
     except Exception:
@@ -219,7 +277,13 @@ fig.update_layout(
     height=760,
     xaxis=dict(range=[85,115], title="RS Ratio"),
     yaxis=dict(range=[85,115], title="RS Momentum"),
-    legend=dict(orientation="h"),
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    ),
 )
 
 st.plotly_chart(
