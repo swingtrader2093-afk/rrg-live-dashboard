@@ -293,28 +293,11 @@ for name, symbol in sectors.items():
         prev_rs = tail["RS_ratio"].iloc[-2] if len(tail) >= 2 else last_rs
         prev_mom = tail["RS_mom"].iloc[-2] if len(tail) >= 2 else last_mom
         
-        # =============================
-        # EMERGING LEADER DETECTION (RECENT CROSS)
-        # =============================
-        lookback = min(5, len(hist) - 1)
-        
-        recent = hist.iloc[max(0, safe_loc - lookback):safe_loc + 1]
-        
-        cross_detected = False
-        for i in range(1, len(recent)):
-            prev_r = recent["RS_ratio"].iloc[i-1]
-            prev_m = recent["RS_mom"].iloc[i-1]
-            curr_r = recent["RS_ratio"].iloc[i]
-            curr_m = recent["RS_mom"].iloc[i]
-        
-            was_improving = (prev_r < 100 and prev_m > 100)
-            now_leading = (curr_r > 100 and curr_m > 100)
-        
-            if was_improving and now_leading:
-                cross_detected = True
-                break
-        
-        is_emerging = cross_detected
+        is_emerging = (
+            last_rs > 100 and
+            last_mom > 100 and
+            not (prev_rs > 100 and prev_mom > 100)
+        )
 
         if is_emerging:
             emerging_leaders.append(name)
