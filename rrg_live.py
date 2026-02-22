@@ -241,7 +241,10 @@ for name, symbol in sectors.items():
         mom_ema = df["RS_ratio"].ewm(span=mom_window, adjust=False).mean()
         df["RS_mom"] = (df["RS_ratio"] / mom_ema) * 100
 
-
+        # =============================
+        # ROTATION VELOCITY (PRO EDGE)
+        # =============================
+        df["velocity"] = df["RS_ratio"].diff()
 
         hist = df.dropna()
 
@@ -379,10 +382,33 @@ fig.add_annotation(x=88, y=112, text="Improving", showarrow=False)
 fig.add_annotation(x=88, y=88, text="Lagging", showarrow=False)
 fig.add_annotation(x=112, y=88, text="Weakening", showarrow=False)
 
+# =============================
+# DYNAMIC AXIS RANGE (PRO)
+# =============================
+all_x = []
+all_y = []
+
+for trace in fig.data:
+    if hasattr(trace, "x") and hasattr(trace, "y"):
+        all_x.extend(trace.x)
+        all_y.extend(trace.y)
+
+if all_x and all_y:
+    import numpy as np
+    xmin, xmax = min(all_x), max(all_x)
+    ymin, ymax = min(all_y), max(all_y)
+
+    padding = 2
+    x_range = [min(85, xmin - padding), max(115, xmax + padding)]
+    y_range = [min(85, ymin - padding), max(115, ymax + padding)]
+else:
+    x_range = [85, 115]
+    y_range = [85, 115]
+
 fig.update_layout(
     height=760,
-    xaxis=dict(range=[85,115], title="RS Ratio"),
-    yaxis=dict(range=[85,115], title="RS Momentum"),
+    xaxis=dict(range=x_range, title="RS Ratio"),
+    yaxis=dict(range=y_range, title="RS Momentum"),
     legend=dict(
         orientation="h",
         yanchor="bottom",
