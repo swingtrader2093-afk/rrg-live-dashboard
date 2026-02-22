@@ -138,7 +138,8 @@ if not nifty_df.empty:
         axis=1
     )
 
-    st.line_chart(chart_df)
+    nifty_plot = chart_df.copy()
+    st.line_chart(nifty_plot, use_container_width=True)
 
 fig = go.Figure()
 
