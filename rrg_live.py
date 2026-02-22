@@ -67,7 +67,7 @@ interval = interval_map[timeframe]
 # =============================
 # DATA FETCH
 # =============================
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=300)  # refresh every 5 minutes
 def fetch(symbol, period, interval):
     df = yf.download(
         symbol,
@@ -219,9 +219,9 @@ for name, symbol in sectors.items():
 
         # Relative strength
         df["RS"] = df["sec"] / df["bench"]
-
+        
         # =============================
-        # ADAPTIVE JdK SMOOTHING
+        # ADAPTIVE JdK SMOOTHING (PRO FIX)
         # =============================
         if timeframe == "Monthly":
             rs_window = 3
@@ -233,8 +233,14 @@ for name, symbol in sectors.items():
             rs_window = 10
             mom_window = 10
         
-        df["RS_ratio"] = (df["RS"] / df["RS"].rolling(rs_window).mean()) * 100
-        df["RS_mom"] = (df["RS_ratio"] / df["RS_ratio"].rolling(mom_window).mean()) * 100
+        # --- JdK-style RS-Ratio (EMA based) ---
+        rs_ema = df["RS"].ewm(span=rs_window, adjust=False).mean()
+        df["RS_ratio"] = (df["RS"] / rs_ema) * 100
+        
+        # --- JdK-style RS-Momentum ---
+        mom_ema = df["RS_ratio"].ewm(span=mom_window, adjust=False).mean()
+        df["RS_mom"] = (df["RS_ratio"] / mom_ema) * 100
+
 
 
         hist = df.dropna()
@@ -253,7 +259,7 @@ for name, symbol in sectors.items():
         # =============================
         # TAIL DOWNSAMPLING (PRO EVEN SPACING)
         # =============================
-        max_tail_points = 4
+        max_tail_points = min(playback, 12)  # 🔥 was 4
         
         if len(tail) > max_tail_points:
             import numpy as np
@@ -284,11 +290,14 @@ for name, symbol in sectors.items():
         prev_rs = tail["RS_ratio"].iloc[-2] if len(tail) >= 2 else last_rs
         prev_mom = tail["RS_mom"].iloc[-2] if len(tail) >= 2 else last_mom
         
-        is_emerging = (
-            last_rs > 100 and
-            last_mom > 100 and
-            not (prev_rs > 100 and prev_mom > 100)
-        )
+        # =============================
+        # EMERGING LEADER DETECTION (PRO)
+        # =============================
+        was_improving = (prev_rs < 100 and prev_mom > 100)
+        now_leading = (last_rs > 100 and last_mom > 100)
+        
+        is_emerging = was_improving and now_leading
+
         
         if is_emerging:
             emerging_leaders.append(name)
