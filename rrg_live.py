@@ -100,6 +100,12 @@ time_index = st.slider(
 )
 
 # =============================
+# SHOW SELECTED DATE
+# =============================
+selected_date = bench_clean.index[time_index]
+st.caption(f"📅 Selected Date: {selected_date.date()}")
+
+# =============================
 # NIFTY PRICE CHART (TOP)
 # =============================
 nifty_df = yf.download(
