@@ -68,7 +68,7 @@ interval = interval_map[timeframe]
 # DATA FETCH
 # =============================
 @st.cache_data(ttl=3600)
-def fetch(symbol):
+def fetch(symbol, period, interval):
     df = yf.download(
         symbol,
         period=period,
@@ -81,7 +81,7 @@ def fetch(symbol):
         return None
     return df["Close"]
 
-bench = fetch(benchmark)
+bench = fetch(benchmark, period, interval)
 if bench is None:
     st.error("Benchmark data not available")
     st.stop()
@@ -191,7 +191,7 @@ valid_count = 0
 
 for name, symbol in sectors.items():
     try:
-        sec = fetch(symbol)
+        sec = fetch(symbol, period, interval)
 
         if sec is None:
             continue
